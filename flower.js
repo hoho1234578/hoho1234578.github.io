@@ -2,20 +2,21 @@ function webGLStart() {
   	var canvas = document.getElementById("lesson01-canvas");
   	initGL(canvas);
   	initShaders();
-  	initBuffers();
+  	initBuffers(); //初始化緩衝器 (buffers) ，緩衝器的作用是保留將要畫的圖形的細節
 
 	// gl.clearColor(0.0, 0.0, 0.0, 1.0);
-	gl.enable(gl.DEPTH_TEST);
+	gl.enable(gl.DEPTH_TEST); //開啟景深測試
 
 	drawScene();
 }
 
 
-//這個函式獲取 WebGL 的紋理 (context)，且使用標準紋理名字告知畫布
 var gl;
 function initGL(canvas) {
     try {
-	    gl = canvas.getContext("experimental-webgl");
+	    gl = canvas.getContext("experimental-webgl"); //獲取 WebGL 的紋理 (context)，且使用標準紋理名字告知畫布
+        
+        //使用drawScene() 內 viewport 函式告訴 WebGL 畫布中儲存物件的寬度與高度
 	    gl.viewportWidth = canvas.width;
 	    gl.viewportHeight = canvas.height;
     } catch(e) {
@@ -26,7 +27,7 @@ function initGL(canvas) {
 }
 
 
-//定義變數 mvMatrix 來儲存模型視圖矩陣， pMatrix 是存投影矩陣
+//定義變數 mvMatrix 來儲存模型視圖矩陣 (model-view matrix) ， pMatrix 是存投影矩陣
 var mvMatrix = mat4.create();
 var pMatrix = mat4.create();
 
@@ -50,13 +51,13 @@ function initShaders() {
     gl.useProgram(shaderProgram);
 
     shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute); //告訴 webGL ，提供數值給矩陣的屬性
 
     //取得顏色屬性 (colour attribute)，啟動此顏色屬性的頂點屬性陣列
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, 
-                                                              "aVertexColor");
+    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
     gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
+    //從著色器語法(program)取得兩個值，就是兩個 uniform 變數
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 }
@@ -107,10 +108,8 @@ function setMatrixUniforms() {
 
 
 //宣告兩全域變數持有緩衝器，以及兩個顏色緩衝器 (colour buffers)
-var flower1VertexPositionBuffer;
-var flower1VertexColorBuffer;
-var flower2VertexPositionBuffer;
-var flower2VertexColorBuffer;
+var flowerVertexPositionBuffer;
+var flowerVertexColorBuffer;
 var centerVertexPositionBuffer;
 var centerVertexColorBuffer;
 
@@ -118,10 +117,12 @@ function initBuffers() {
 
     /******************畫花心*******************/
 
-    centerVertexPositionBuffer = gl.createBuffer(); //設定緩衝區
+    centerVertexPositionBuffer = gl.createBuffer(); //建立頂點位置 (position) 的緩衝器
 
     //告訴 WebGL 操作可使用的緩衝器，就是「當前陣列緩衝器 (current array buffers)」
     gl.bindBuffer(gl.ARRAY_BUFFER, centerVertexPositionBuffer);
+
+    //開始定義頂點位置
     var circle = {x: 0, y: 0, r: 0.2};
     var numFans = 100;
     var degreePerFan = degToRad(360 / numFans); //算每個扇子的角度
@@ -156,14 +157,14 @@ function initBuffers() {
 
     /******************畫花瓣*******************/
     
-    flower2VertexPositionBuffer = gl.createBuffer();
+    flowerVertexPositionBuffer = gl.createBuffer();
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, flower2VertexPositionBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, flowerVertexPositionBuffer);
 
     var circle = {x: 0, y: 0, r: 0};
     var numFans = 80;
     var degreePerFan = 360/numFans;
-    var flower2Vertex =[];
+    var flowerVertex =[];
     var j = 0;
 
     //畫雨滴狀花瓣
@@ -183,36 +184,34 @@ function initBuffers() {
     		circle.r =0;
     	}
 
-    	flower2Vertex[j++] = circle.x + Math.cos(degToRad(degreePerFan) * i) * circle.r;
-    	flower2Vertex[j++] = circle.y + Math.sin(degToRad(degreePerFan) * i) * circle.r;
-    	flower2Vertex[j++] = 0.0;
+    	flowerVertex[j++] = circle.x + Math.cos(degToRad(degreePerFan) * i) * circle.r;
+    	flowerVertex[j++] = circle.y + Math.sin(degToRad(degreePerFan) * i) * circle.r;
+    	flowerVertex[j++] = 0.0;
     }
 
     
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flower2Vertex), gl.STATIC_DRAW);
-    flower2VertexPositionBuffer.itemSize = 3;
-    flower2VertexPositionBuffer.numItems = numFans;
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flowerVertex), gl.STATIC_DRAW);
+    flowerVertexPositionBuffer.itemSize = 3;
+    flowerVertexPositionBuffer.numItems = numFans;
 
-    flower2VertexColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, flower2VertexColorBuffer);
+    flowerVertexColorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, flowerVertexColorBuffer);
     colors = []
     colors = colors.concat([207/255, 64/255, 96/255, 1.0]);
     for (var i=1; i < numFans; i++) {
       colors = colors.concat([251/255, 173/255, 201/255, 1.0]);
     }
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    flower2VertexColorBuffer.itemSize = 4;
-    flower2VertexColorBuffer.numItems = numFans;
+    flowerVertexColorBuffer.itemSize = 4;
+    flowerVertexColorBuffer.numItems = numFans;
 
  }
 
 
 //推物件頂點位置到顯示卡
 function drawScene() {
-	//使用 gl.viewport() 函式告訴 WebGL 畫布的大小
+	//使用 gl.viewport() 函式告訴 WebGL 畫布的大小。在開始畫之前需要設定畫布的大小，接著清除 gl.clear() 畫布準備畫它
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	
-	//在開始畫之前需要設定畫布的大小，接著清除 gl.clear() 畫布準備畫它
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     /*設定觀看場景的透視 (perspective) 參數。預設的 WebGL 畫的大小等同於從遠處觀看東西的大小，
@@ -224,10 +223,10 @@ function drawScene() {
 
     /**************畫花心**************/
 
-    mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, [0, 3, -19]);
+    mat4.identity(mvMatrix); //單位矩陣，也就是把要畫的 3D 世界移動回原點 (origin point)
+    mat4.translate(mvMatrix, [0, 3, -19]); //mat4.translate() 就是 mvMatrix 乘上 轉移矩陣 [0, 2, -19]
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, centerVertexPositionBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, centerVertexPositionBuffer); //呼叫 gl.bindBuffer() 指定為當前緩衝器，且在呼叫後運行 bindBuffer 的動作
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 
                            centerVertexPositionBuffer.itemSize, 
                            gl.FLOAT, false, 0, 0);
@@ -236,7 +235,7 @@ function drawScene() {
     gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 
                            centerVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-    setMatrixUniforms();
+    setMatrixUniforms(); //告訴 WebGL 考慮當前模型視圖矩陣，把矩陣參數傳入顯示卡
 
     gl.drawArrays(gl.TRIANGLE_FAN, 0, centerVertexPositionBuffer.numItems);
 
@@ -255,18 +254,18 @@ function drawScene() {
     	mat4.rotate(mvMatrix, degToRad(degreePerPetal*i+lean), [0, 0, 1]);
 
 
-	    gl.bindBuffer(gl.ARRAY_BUFFER, flower2VertexPositionBuffer);
+	    gl.bindBuffer(gl.ARRAY_BUFFER, flowerVertexPositionBuffer);
 	    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 
-	                           flower2VertexPositionBuffer.itemSize, 
+	                           flowerVertexPositionBuffer.itemSize, 
 	                           gl.FLOAT, false, 0, 0);
 
-	    gl.bindBuffer(gl.ARRAY_BUFFER, flower2VertexColorBuffer);
+	    gl.bindBuffer(gl.ARRAY_BUFFER, flowerVertexColorBuffer);
 	    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 
-	                           flower2VertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	                           flowerVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
 	    setMatrixUniforms();
 
-	    gl.drawArrays(gl.TRIANGLE_FAN, 0, flower2VertexPositionBuffer.numItems);
+	    gl.drawArrays(gl.TRIANGLE_FAN, 0, flowerVertexPositionBuffer.numItems);
 
 	    if(i==7){i=0;}
     }
